@@ -1,0 +1,5 @@
+/target
+.direnv
+.privatekey
+.env
+*.db

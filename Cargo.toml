@@ -1,0 +1,4 @@
+[workspace]
+members = ["crates/remindme", "crates/migration", "crates/entity"]
+package.license = "AGPL-3.0-or-later"
+resolver = "2"
