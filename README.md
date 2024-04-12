@@ -25,6 +25,16 @@ Lastly, run the project using `cargo`, turning on debug logs for local developme
 RUST_LOG=remindme=debug cargo run -p remindme
 ```
 
+### Ubuntu
+
+There are only a few extra dependencies needed on the system to build the project.
+
+```shell
+sudo apt update
+sudo apt install -y build-essential libsqlite3-dev
+
+```
+
 ### Nix
 
 There is a `flake.nix` file that can be used for an easy local development setup with the needed tools. Use `nix develop` if `direnv` isn't setup. If you are using `direnv`, run `direnv allow` to get the environment tools installed locally.
