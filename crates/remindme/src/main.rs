@@ -5,7 +5,7 @@ use std::env;
 use std::{io::ErrorKind, time::Duration};
 
 use ::time::OffsetDateTime;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use humantime::parse_duration;
 use log::{debug, error, info};
 use migration::{Migrator, MigratorTrait};
@@ -21,7 +21,11 @@ const PRIVATE_KEY_FILE: &str = ".privatekey";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenvy::dotenv()?;
+    if let Err(e) = dotenvy::dotenv() {
+        if !e.not_found() {
+            bail!(e)
+        }
+    }
     env_logger::init();
 
     let db = get_db_and_migrate().await?;
