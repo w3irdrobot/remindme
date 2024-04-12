@@ -37,6 +37,9 @@ async fn main() -> Result<()> {
     let client = get_client(&keys).await?;
     info!("client connected to relays");
 
+    create_nostr_metadata(client.clone()).await?;
+    debug!("metadata for bot broadcasted");
+
     let re = Regex::new(&format!(
         r"{} in (\d+\s?[A-Za-z]+)",
         keys.public_key().to_nostr_uri()?
@@ -120,6 +123,20 @@ async fn get_client(keys: &Keys) -> Result<Client> {
     client.subscribe(vec![filter], None).await;
 
     Ok(client)
+}
+
+async fn create_nostr_metadata(client: Client) -> Result<()> {
+    let metadata = Metadata::new()
+        .name("RemindMe")
+        .display_name("RemindMe")
+        .about("Simple bot for reminding about events on nostr")
+        .nip05("remindme@w3ird.tech")
+        .website(Url::parse("https://github.com/w3irdrobot/remindme")?);
+    let builder = EventBuilder::metadata(&metadata);
+
+    client.send_event_builder(builder).await?;
+
+    Ok(())
 }
 
 async fn process_reminder_notifications(
