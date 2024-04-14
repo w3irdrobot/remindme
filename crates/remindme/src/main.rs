@@ -86,6 +86,7 @@ struct BotConfig {
     pub about: String,
     pub address: Option<String>,
     pub website: Option<String>,
+    pub profile_pic: Option<String>,
 }
 
 async fn get_config() -> Result<Config> {
@@ -172,6 +173,10 @@ async fn create_nostr_metadata(client: Client, bot_config: BotConfig) -> Result<
 
     if let Some(website) = bot_config.website {
         metadata = metadata.website(Url::parse(&website)?);
+    }
+
+    if let Some(pfp) = bot_config.profile_pic {
+        metadata = metadata.picture(Url::parse(&pfp)?);
     }
 
     let builder = EventBuilder::metadata(&metadata);
