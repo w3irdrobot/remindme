@@ -1,11 +1,11 @@
 mod db;
 mod responses;
 
-use std::env;
 use std::{io::ErrorKind, time::Duration};
 
 use ::time::OffsetDateTime;
 use anyhow::{anyhow, bail, Result};
+use config::{Case, Environment};
 use humantime::parse_duration;
 use log::{debug, error, info};
 use migration::{Migrator, MigratorTrait};
@@ -13,6 +13,7 @@ use nostr_sdk::prelude::*;
 use regex::Regex;
 use sea_orm::entity::*;
 use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, Set};
+use serde::Deserialize;
 use tokio::{fs, select, signal};
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
@@ -28,7 +29,9 @@ async fn main() -> Result<()> {
     }
     env_logger::init();
 
-    let db = get_db_and_migrate().await?;
+    let cfg = get_config().await?;
+
+    let db = get_db_and_migrate(&cfg.database_url).await?;
 
     let keys = get_keys().await?;
     let public_key = keys.public_key();
@@ -37,7 +40,7 @@ async fn main() -> Result<()> {
     let client = get_client(&keys).await?;
     info!("client connected to relays");
 
-    create_nostr_metadata(client.clone()).await?;
+    create_nostr_metadata(client.clone(), cfg.bot).await?;
     debug!("metadata for bot broadcasted");
 
     let re = Regex::new(&format!(
@@ -71,8 +74,40 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn get_db_and_migrate() -> Result<DatabaseConnection> {
-    let db_url = env::var("DATABASE_URL")?;
+#[derive(Clone, Debug, Deserialize)]
+struct Config {
+    pub database_url: String,
+    pub bot: BotConfig,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+struct BotConfig {
+    pub name: String,
+    pub about: String,
+    pub address: Option<String>,
+    pub website: Option<String>,
+}
+
+async fn get_config() -> Result<Config> {
+    let cfg = config::Config::builder()
+        .add_source(
+            Environment::default()
+                .prefix("remind")
+                .prefix_separator("_")
+                .convert_case(Case::UpperSnake)
+                .separator("__"),
+        )
+        .set_default("bot.name", "RemindMe")?
+        .set_default(
+            "bot.about",
+            "Simple bot for reminding about events on nostr",
+        )?
+        .build()?;
+
+    Ok(cfg.try_deserialize()?)
+}
+
+async fn get_db_and_migrate(db_url: &str) -> Result<DatabaseConnection> {
     let db = Database::connect(db_url).await?;
 
     Migrator::up(&db, None).await?;
@@ -125,13 +160,20 @@ async fn get_client(keys: &Keys) -> Result<Client> {
     Ok(client)
 }
 
-async fn create_nostr_metadata(client: Client) -> Result<()> {
-    let metadata = Metadata::new()
-        .name("RemindMe")
-        .display_name("RemindMe")
-        .about("Simple bot for reminding about events on nostr")
-        .nip05("remindme@w3ird.tech")
-        .website(Url::parse("https://github.com/w3irdrobot/remindme")?);
+async fn create_nostr_metadata(client: Client, bot_config: BotConfig) -> Result<()> {
+    let mut metadata = Metadata::new()
+        .name(&bot_config.name)
+        .display_name(bot_config.name)
+        .about(bot_config.about);
+
+    if let Some(address) = bot_config.address {
+        metadata = metadata.nip05(address);
+    }
+
+    if let Some(website) = bot_config.website {
+        metadata = metadata.website(Url::parse(&website)?);
+    }
+
     let builder = EventBuilder::metadata(&metadata);
 
     client.send_event_builder(builder).await?;

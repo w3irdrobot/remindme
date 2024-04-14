@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 anyhow = "1.0.81"
+config = "0.14.0"
 dotenvy = "0.15.7"
 entity = { path = "../entity" }
 env_logger = "0.11.3"
@@ -19,6 +20,7 @@ sea-orm = { version = "0.12.15", features = [
   "macros",
   "with-time",
 ] }
+serde = { version = "1.0.197", features = ["derive"] }
 time = { version = "0.3.34", features = ["serde"] }
 tokio = { version = "1.37.0", features = [
   "rt-multi-thread",
