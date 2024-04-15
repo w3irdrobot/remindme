@@ -21,7 +21,7 @@ pub async fn reminder_duration_reached(
     pubkey: PublicKey,
 ) -> Result<()> {
     let message = format!(
-        "Hey nostr:{}! You asked me to remind you about this. nost:{}",
+        "Hey nostr:{}! You asked me to remind you about this. nostr:{}",
         pubkey.to_bech32().unwrap(),
         event_id.to_bech32().unwrap(),
     );
