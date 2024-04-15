@@ -12,7 +12,7 @@ pub async fn new_reminder_creation(
         remind_at.format(&Rfc2822)?
     );
 
-    respond(client, event.id, event.pubkey, &message).await
+    respond(client, event.pubkey, &message).await
 }
 
 pub async fn reminder_duration_reached(
@@ -26,22 +26,17 @@ pub async fn reminder_duration_reached(
         event_id.to_bech32().unwrap(),
     );
 
-    respond(client, event_id, pubkey, &message).await
+    respond(client, pubkey, &message).await
 }
 
 pub async fn rate_limit_hit(client: Client, event: &Event) -> Result<()> {
     let message = "I'm sorry, but you've been rate-limited. Maybe wait a bit and try again later.";
 
-    respond(client, event.id, event.pubkey, message).await
+    respond(client, event.pubkey, message).await
 }
 
-async fn respond(
-    client: Client,
-    event_id: EventId,
-    pubkey: PublicKey,
-    message: &str,
-) -> Result<()> {
-    let tags = vec![Tag::event(event_id), Tag::public_key(pubkey)];
+async fn respond(client: Client, pubkey: PublicKey, message: &str) -> Result<()> {
+    let tags = vec![Tag::public_key(pubkey)];
     let builder = EventBuilder::new(Kind::TextNote, message, tags);
 
     client.send_event_builder(builder).await?;
