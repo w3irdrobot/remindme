@@ -133,9 +133,14 @@ async fn get_client(keys: &Keys) -> Result<Client> {
     // add reader relays
     for relay in [
         "wss://relay.damus.io",
+        "wss://nostr.plebchain.org/",
+        "wss://bitcoiner.social/",
         "wss://relay.snort.social",
         "wss://relayable.org",
         "wss://nos.lol",
+        "wss://nostr.mom",
+        "wss://e.nos.lol",
+        "wss://nostr.bitcoiner.social",
     ] {
         client
             .add_relay_with_opts(relay, RelayOptions::default().write(false))
