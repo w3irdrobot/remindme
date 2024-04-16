@@ -7,6 +7,7 @@ use ::time::OffsetDateTime;
 use anyhow::{anyhow, bail, Result};
 use config::{Case, Environment};
 use humantime::parse_duration;
+use lazy_static::lazy_static;
 use log::{debug, error, info};
 use migration::{Migrator, MigratorTrait};
 use nostr_sdk::prelude::*;
@@ -19,6 +20,10 @@ use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
 
 const PRIVATE_KEY_FILE: &str = ".privatekey";
+
+lazy_static! {
+    static ref REGEX: Regex = Regex::new(r"in (\d+\s?[A-Za-z]+)").unwrap();
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -43,11 +48,6 @@ async fn main() -> Result<()> {
     create_nostr_metadata(client.clone(), cfg.bot).await?;
     debug!("metadata for bot broadcasted");
 
-    let re = Regex::new(&format!(
-        r"{} in (\d+\s?[A-Za-z]+)",
-        keys.public_key().to_nostr_uri()?
-    ))?;
-
     let tracker = TaskTracker::new();
     let cancel_token = CancellationToken::new();
 
@@ -56,7 +56,6 @@ async fn main() -> Result<()> {
         cancel_token.clone(),
         client.clone(),
         db.clone(),
-        re,
     ));
     // kick off reminder task
     tracker.spawn(process_reminders(cancel_token.clone(), client, db));
@@ -190,7 +189,6 @@ async fn process_reminder_notifications(
     cancel_token: CancellationToken,
     client: Client,
     db: DatabaseConnection,
-    re: Regex,
 ) {
     let mut notifications = client.notifications();
     info!("listening for notifications");
@@ -212,7 +210,7 @@ async fn process_reminder_notifications(
                 continue;
             };
 
-            let Some(caps) = re.captures(reply.content()) else {
+            let Some(caps) = REGEX.captures(reply.content()) else {
                 debug!("event {} does not match the expected message", reply.id);
                 continue;
             };

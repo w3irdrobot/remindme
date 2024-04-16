@@ -2479,6 +2479,7 @@ dependencies = [
  "entity",
  "env_logger",
  "humantime",
+ "lazy_static",
  "log",
  "migration",
  "nostr-sdk",

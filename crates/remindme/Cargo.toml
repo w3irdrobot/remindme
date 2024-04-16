@@ -10,6 +10,7 @@ dotenvy = "0.15.7"
 entity = { path = "../entity" }
 env_logger = "0.11.3"
 humantime = "2.1.0"
+lazy_static = "1.4.0"
 log = "0.4.21"
 migration = { path = "../migration" }
 nostr-sdk = "0.29.0"
