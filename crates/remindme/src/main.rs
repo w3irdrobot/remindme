@@ -132,6 +132,7 @@ async fn get_client(keys: &Keys) -> Result<Client> {
     let client = Client::new(keys);
     // add reader relays
     for relay in [
+        "wss://relay.damus.io",
         "wss://relay.snort.social",
         "wss://relayable.org",
         "wss://nos.lol",
