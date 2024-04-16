@@ -8,7 +8,7 @@ use anyhow::{anyhow, bail, Result};
 use config::{Case, Environment};
 use humantime::parse_duration;
 use lazy_static::lazy_static;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use migration::{Migrator, MigratorTrait};
 use nostr_sdk::prelude::*;
 use regex::Regex;
@@ -208,7 +208,14 @@ async fn process_reminder_notifications(
             Ok(notification) = notifications.recv() => notification
         };
 
-        if let RelayPoolNotification::Event { event: reply, .. } = notification {
+        trace!("raw notification received: {:?}", &notification);
+
+        if let RelayPoolNotification::Message { message, .. } = notification {
+            let RelayMessage::Event { event: reply, .. } = message else {
+                trace!("message not an event. skipping...");
+                continue;
+            };
+
             debug!("event received: {}", reply.content);
             let Some(Tag::Event { event_id, .. }) = reply.tags().iter().find(|e| e.is_reply())
             else {
