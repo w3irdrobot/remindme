@@ -55,6 +55,7 @@ async fn main() -> Result<()> {
     tracker.spawn(process_reminder_notifications(
         cancel_token.clone(),
         client.clone(),
+        keys.public_key(),
         db.clone(),
     ));
     // kick off reminder task
@@ -156,13 +157,6 @@ async fn get_client(keys: &Keys) -> Result<Client> {
 
     client.connect().await;
 
-    let start = Timestamp::now() - Duration::from_secs(60 * 60 * 24 * 2);
-    let filter = Filter::new()
-        .kind(Kind::TextNote)
-        .since(start)
-        .pubkey(keys.public_key());
-    client.subscribe(vec![filter], None).await;
-
     Ok(client)
 }
 
@@ -194,9 +188,16 @@ async fn create_nostr_metadata(client: Client, bot_config: BotConfig) -> Result<
 async fn process_reminder_notifications(
     cancel_token: CancellationToken,
     client: Client,
+    pubkey: PublicKey,
     db: DatabaseConnection,
 ) {
     let mut notifications = client.notifications();
+    let start = Timestamp::now() - Duration::from_secs(60 * 60 * 24 * 2);
+    let filter = Filter::new()
+        .kind(Kind::TextNote)
+        .since(start)
+        .pubkey(pubkey);
+    client.subscribe(vec![filter], None).await;
     info!("listening for notifications");
 
     loop {
@@ -210,12 +211,7 @@ async fn process_reminder_notifications(
 
         trace!("raw notification received: {:?}", &notification);
 
-        if let RelayPoolNotification::Message { message, .. } = notification {
-            let RelayMessage::Event { event: reply, .. } = message else {
-                trace!("message not an event. skipping...");
-                continue;
-            };
-
+        if let RelayPoolNotification::Event { event: reply, .. } = notification {
             debug!("event received: {}", reply.content);
             let Some(Tag::Event { event_id, .. }) = reply.tags().iter().find(|e| e.is_reply())
             else {
